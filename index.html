@@ -264,11 +264,14 @@
     </header>
 
     <div class="layout">
+      <!-- LEFT SIDE -->
       <div>
+        <!-- Agent / Focus -->
         <div class="card">
           <div class="row" style="justify-content: space-between; align-items: center">
             <div class="agent-frame" id="agentFrame">
               <div class="label">Agent</div>
+              <!-- Transparent placeholder to avoid broken image icon before first spin -->
               <img
                 id="agentImg"
                 class="agent-icon"
@@ -278,6 +281,7 @@
               <div id="agentName" class="muted small"></div>
               <div class="shine"></div>
             </div>
+
             <div
               style="
                 width: 2px;
@@ -287,19 +291,21 @@
                 margin: 0 12px;
               "
             ></div>
+
             <div class="center" style="min-width: 180px">
               <div class="label">Focus</div>
               <div id="focusDisplay" class="big focus-text">-</div>
               <div class="small muted">Short labels used</div>
             </div>
           </div>
-          <div class="row" style="margin-top: 12px; justify-content: center">
+		  <div class="row" style="margin-top: 12px; justify-content: center">
             <button id="spinAgentBtn">Spin Agent</button>
             <button id="spinFocusBtn" style="background: #7c3aed">Spin Focus</button>
             <button id="resetBtn" class="ghost">Full Reset</button>
           </div>
         </div>
 
+        <!-- RR + scoreboard + chart -->
         <div class="card" style="margin-top: 12px">
           <h3 style="margin: 0 0 8px">RR Calculator</h3>
           <div class="row" style="align-items: center">
@@ -368,6 +374,7 @@
         </div>
       </div>
 
+      <!-- RIGHT SIDE: Match tracker + logs -->
       <div>
         <div class="card">
           <h3 style="margin: 0 0 8px">Match Tracker</h3>
@@ -395,6 +402,7 @@
             <button id="exportCsvBtn" class="ghost">Export Combined CSV</button>
             <button id="clearMatchesBtn" class="ghost">Clear Matches</button>
           </div>
+
           <div style="margin-top: 10px">
             <div class="label">Recent Matches</div>
             <ul id="matchesList"></ul>
@@ -420,6 +428,7 @@
             <button id="addLogBtn">Save Log</button>
             <button id="clearLogsBtn" class="ghost">Clear Logs</button>
           </div>
+
           <div style="margin-top: 10px">
             <div class="label">Recent Logs</div>
             <ul id="logsList"></ul>
@@ -460,6 +469,7 @@
       waylay: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/waylay.png",
       yoru: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/yoru.png"
     };
+
     const agents = Object.keys(agentIcons);
     const focuses = [
       "CH Placement",
@@ -524,7 +534,7 @@
     const SEGMENTS = 20;
 
     function titleCase(s) {
-      return s.replace(/\w/g, (c) => c.toUpperCase());
+      return s.replace(/\b\w/g, (c) => c.toUpperCase());
     }
 
     function saveAll() {
@@ -601,8 +611,7 @@
         chartRow.appendChild(bar);
       });
     }
-
-    function updateRating() {
+	function updateRating() {
       const sumWins = wins.reduce((a, b) => a + b, 0);
       const sumLosses = losses.reduce((a, b) => a + b, 0);
       const total = sumWins + sumLosses;
@@ -846,7 +855,7 @@
         focus,
         result,
         rr: result === "win" ? rrVal : -Math.abs(rrVal),
-        map,
+       map,
         score,
         notes,
         date: iso,
@@ -904,8 +913,7 @@
       saveAll();
       renderLogs();
     });
-
-    function downloadCSV(filename, csvString) {
+	function downloadCSV(filename, csvString) {
       const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -987,8 +995,7 @@
         ];
         rows.push(row.join(","));
       });
-      const csv = rows.join("
-");
+      const csv = rows.join("\n");
       downloadCSV("valorant_tracker_export.csv", csv);
     });
 
