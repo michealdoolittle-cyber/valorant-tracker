@@ -1,1034 +1,1208 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Valorant Randomizer & Tracker</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VAL Tracker</title>
   <style>
-    :root {
-      --bg: #071029;
-      --card: #0b1220;
-      --muted: #94a3b8;
-      --accent: #ff4655;
-      --good: #16a34a;
-      --bad: #ef4444;
-      --seg-bg: #0f1724;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: linear-gradient(180deg, var(--bg), #071b2b);
-      color: #e6eef8;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      padding: 18px;
-      display: flex;
-      justify-content: center;
-    }
-    .app { width: 100%; max-width: 980px; }
-    header {
-      display: flex;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-    .logo {
-      width: 48px;
-      height: 48px;
-      border-radius: 8px;
-      object-fit: cover;
-    }
-    h1 { margin: 0; font-size: 18px; }
-    .sub { color: var(--muted); font-size: 13px; }
-    .layout {
-      display: grid;
-      grid-template-columns: 1fr 420px;
-      gap: 14px;
-    }
-    @media (max-width: 920px) {
-      .layout { grid-template-columns: 1fr; }
-    }
-    .card {
-      background: rgba(255, 255, 255, 0.03);
-      padding: 12px;
-      border-radius: 12px;
-      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.6);
-    }
-    .row {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    .center {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-    .label { color: var(--muted); font-size: 12px; }
-    .big { font-size: 22px; font-weight: 700; }
-    button {
-      background: var(--accent);
-      border: 0;
-      padding: 8px 12px;
-      border-radius: 8px;
-      color: white;
-      cursor: pointer;
-    }
-    button.ghost {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-    .btn-win { background: var(--good); }
-    .btn-loss { background: var(--bad); }
-    input[type="number"],
-    input[type="text"],
-    select,
-    textarea {
-      width: 100%;
-      padding: 8px;
-      border-radius: 8px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: transparent;
-      color: inherit;
-    }
-    textarea { min-height: 64px; resize: vertical; }
-    .agent-icon {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.02);
-      padding: 6px;
-    }
-    .focus-text {
-      transition: opacity 0.28s ease, transform 0.28s ease;
-    }
-    .focus-text.hidden {
-      opacity: 0;
-      transform: translateY(-6px);
-    }
-    .agent-frame {
-      position: relative;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      align-items: center;
-    }
-    .agent-frame .shine {
-      position: absolute;
-      inset: 0;
-      border-radius: 12px;
-      pointer-events: none;
-      background: linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.02),
-        rgba(255, 255, 255, 0.06) 40%,
-        rgba(255, 255, 255, 0.02)
-      );
-      mix-blend-mode: overlay;
-      opacity: 0;
-    }
-    .agent-frame.spin .shine {
-      animation: shine 0.7s linear;
-    }
-    @keyframes shine {
-      0% { opacity: 0; }
-      50% { opacity: 1; }
-      100% { opacity: 0; }
-    }
-    .rating-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .rating-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 13px;
-      color: var(--muted);
-    }
-    .rating-bar {
-      width: 100%;
-      height: 34px;
-      background: var(--seg-bg);
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      padding: 6px;
-      box-sizing: border-box;
-      position: relative;
-    }
-    .rating-center {
-      position: absolute;
-      left: 50%;
-      top: 6px;
-      bottom: 6px;
-      width: 2px;
-      background: rgba(255, 255, 255, 0.08);
-      transform: translateX(-50%);
-    }
-    .segments {
-      display: flex;
-      gap: 6px;
-      width: 100%;
-      height: 100%;
-    }
-    .seg {
-      flex: 1;
-      height: 100%;
-      border-radius: 4px;
-      background: rgba(255, 255, 255, 0.02);
-      transition: background 0.3s ease, transform 0.3s ease;
-    }
-    .seg.win {
-      background: linear-gradient(180deg, var(--good), #0b6b37);
-      transform: scaleY(1.03);
-    }
-    .seg.loss {
-      background: linear-gradient(180deg, #b91c1c, var(--bad));
-      transform: scaleY(1.03);
-    }
-    .scoreboard {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-      margin-top: 8px;
-    }
-    .scorebox {
-      background: rgba(255, 255, 255, 0.02);
-      padding: 8px 10px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    .score-num {
-      font-weight: 700;
-      font-size: 18px;
-    }
-    .muted { color: var(--muted); }
-    .small { font-size: 12px; color: var(--muted); }
-    ul {
-      list-style: none;
-      padding: 0;
-      margin: 8px 0;
-      max-height: 160px;
-      overflow: auto;
-    }
-    li {
-      padding: 6px 8px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.02);
-      margin-bottom: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .chart-row {
-      display: flex;
-      gap: 8px;
-      align-items: flex-end;
-      height: 120px;
-      padding: 8px;
-      overflow-x: auto;
-    }
-    .chart-bar {
-      width: 18px;
-      border-radius: 4px;
-      display: inline-block;
-      transition: height 0.36s;
-    }
-    .pop {
-      animation: popAnim 0.34s cubic-bezier(0.2, 0.9, 0.3, 1);
-    }
-    @keyframes popAnim {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.08); }
-      100% { transform: scale(1); }
-    }
-  </style>
+/* ===========================
+   ROOT + GLOBAL
+=========================== */
+:root {
+  --bg: #071029;
+  --card: #0b1220;
+  --muted: #94a3b8;
+  --accent: #ff4655;
+  --good: #16a34a;
+  --bad: #ef4444;
+  --seg-bg: #0f1724;
+
+  --duelist: #ff4655;
+  --controller: #7b3fbf;
+  --initiator: #3b82f6;
+  --sentinel: #22c55e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, var(--bg), #071b2b);
+  color: #e6eef8;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  min-height: 100vh;
+}
+
+.app {
+  margin: 0 auto;
+}
+
+/* ===========================
+   NAV + HEADER
+=========================== */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  height: 88px;
+  padding: 0 22px;
+  background: var(--card);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.nav-left {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  justify-content: flex-start;  /* Align to the left */
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-img {
+  height: 26px;
+  width: 26px;
+  opacity: 0.9;
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.nav-links {
+  position: relative;
+  display: flex;
+  gap: 14px;
+}
+
+.nav-btn {
+  background: transparent;
+  border: none;
+  color: #c9d6e4;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: 0.15s;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nav-btn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+.nav-btn.active {
+  background: var(--accent);
+  color: white;
+}
+
+.nav-underline {
+  position: absolute;
+  bottom: -3px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+  width: 0;
+  left: 0;
+  transition: 0.25s cubic-bezier(.25,.8,.25,1);
+}
+/* RR Progress Bars */
+.nav-right {
+  display: flex;
+  justify-content: flex-end;  /* Align to the right */
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  z-index: 50;
+}
+
+/* Profile Panel should be inside nav-right */
+.profile-panel {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  z-index: 100;
+}
+
+.profile-avatar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+
+.profile-avatar-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 2px solid #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.profile-avatar-wrap:hover .profile-avatar-ring {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255,70,85,0.55); /* Optional shadow on hover */
+  background-color: rgba(255, 255, 255, 0.1); /* Optional background color change */
+}
+
+.profile-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 14px;  /* Increase font size for better readability */
+}
+
+.profile-region {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  color: #38bdf8;
+}
+
+.profile-divider {
+  width: 1px;
+  height: 50px;
+  background: rgba(255,255,255,0.25);
+  margin: 0 6px;
+}
+
+.profile-dropdown-toggle {
+  pointer-events: auto;
+  transition: transform 0.18s ease;
+}
+
+.profile-panel.open .profile-dropdown-toggle {
+  transform: rotate(180deg);  /* Rotate the dropdown icon when the panel is open */
+}
+
+/* Settings Dropdown */
+.profile-dropdown {
+  position: absolute;
+  top: calc(88px + 6px);
+  right: 22px;
+  width: 260px;
+  background: rgba(15,23,42,0.98);
+  border-radius: 14px;
+  border: 1px solid rgba(148,163,184,0.5);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.7);
+  padding: 8px 0;
+  z-index: 1200;
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.92);
+  transition: 0.18s ease-out;
+}
+
+.profile-dropdown.open {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+.pd-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 10px 14px 4px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: var(--accent);
+}
+
+/* Hamburger Button (Mobile) */
+.hamburger {
+  display: none;  /* Hide by default */
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  color: #e6eef8;
+  cursor: pointer;
+}
+/* ===========================
+   PAGE BASE
+=========================== */
+.page {
+  display: none;
+  padding-top: 100px;
+  min-height: calc(100vh - 88px);
+}
+
+.page.active {
+  display: block;
+}
+
+/* ===========================
+   HOME LAYOUT
+=========================== */
+#page-home {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 88px);
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+}
+
+.home-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3-column layout for larger screens */
+  grid-template-rows: auto auto 1fr auto auto;
+  grid-template-areas:
+    "weekly-focus weekly-focus improvement-line"
+    "lens-compass round-impact round-impact"
+    "loadout-generator rr-calculator rr-calculator"
+    "rr-trend-chart rr-trend-chart rr-trend-chart";
+  gap: 16px;
+  width: 100%;
+  max-width: 1200px;
+  padding: 16px;
+  margin: 0 auto;
+}
+
+@media (max-width: 920px) {
+  .home-layout {
+    grid-template-columns: 1fr; /* Stack into one column for mobile */
+  }
+}
+
+/* ===========================
+   CARD STYLES
+=========================== */
+.card {
+  padding: 16px;
+  gap: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.weekly-focus-card {
+  grid-area: weekly-focus;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.improvement-timeline {
+  grid-area: improvement-line;
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(148,163,184,0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.chart-compass-layout {
+  grid-area: lens-compass;
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
+
+.impact-card {
+  grid-area: round-impact;
+}
+
+.loadout-card {
+  grid-area: loadout-generator;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rr-card {
+  grid-area: rr-calculator;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.rr-chart-card {
+  grid-area: rr-trend-chart;
+}
+/* ===========================
+   BUTTONS
+=========================== */
+button {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.22s, transform 0.15s;
+  width: auto; /* Ensure buttons take up full width when needed */
+}
+
+input[type="number"],
+input[type="text"],
+select,
+textarea {
+  width: 100%;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: transparent;
+  color: #e6eef8;
+}
+
+textarea {
+  min-height: 64px;
+  resize: vertical;
+}
+
+button:hover {
+  background: #334155;
+  transform: translateY(-2px);
+}
+
+button:active {
+  transform: scale(0.96);
+}
+
+button.rr-btn {
+  padding: 8px 12px !important;
+}
+
+button.rr-btn.btn-win {
+  background: var(--good) !important;
+}
+
+button.rr-btn.btn-loss {
+  background: var(--bad) !important;
+}
+
+button.rr-btn.btn-draw {
+  background: #3b82f6 !important;
+}
+
+button.rr-btn.btn-undo {
+  background: #222 !important;
+}
+/* ===========================
+   MATCH LIST
+=========================== */
+#matchList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#matchList li {
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: 6px;
+  border-radius: 8px;
+  transition: 0.15s;
+}
+
+#matchList li:hover {
+  background: rgba(255, 70, 85, 0.25);
+}
+
+.match-delete-btn {
+  background: transparent;
+  border: none;
+  color: #ff4655;
+  padding: 4px 6px;
+}
+
+/* ===========================
+   MODAL
+=========================== */
+.rr-modal-content {
+  background-color: #fff;
+  margin: 15% auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 80%;
+  max-width: 500px;
+  min-width: 300px;
+}
+
+@media (max-width: 920px) {
+  .rr-modal-content {
+    width: 90%; /* Adjust width on smaller screens */
+  }
+}
+
+#chartRow svg {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.close-btn {
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  cursor: pointer;
+}
+
+/* ===========================
+   PROFILE PANEL / AVATAR
+=========================== */
+.profile-panel {
+  position: fixed;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+}
+
+.profile-avatar-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 50%;
+  transition: 0.2s ease;
+  cursor: pointer;
+}
+
+.profile-avatar-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  border: 2px solid #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: 0.2s;
+}
+
+.profile-avatar-wrap:hover .profile-avatar-ring {
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255,70,85,0.55);
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.profile-avatar-img {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.profile-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 12px;
+  color: #e6eef8;
+}
+
+.profile-region {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid rgba(148,163,184,0.5);
+  color: #38bdf8;
+}
+
+.profile-divider {
+  width: 1px;
+  height: 50px;
+  background: rgba(255,255,255,0.25);
+  margin: 0 6px;
+}
+
+
+</style>
 </head>
 <body>
-  <div class="app">
-    <header>
-      <img
-        class="logo"
-        src="https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/val-logo.png"
-        alt="Valorant Logo"
-      />
-      <div>
-        <h1>Valorant Randomizer & Tracker</h1>
-        <div class="sub">
-          Agent slot • Focus fade • RR + Match tracker • Logs • CSV export
-        </div>
-      </div>
-    </header>
-
-    <div class="layout">
-      <!-- LEFT SIDE -->
-      <div>
-        <!-- Agent / Focus -->
-        <div class="card">
-          <div class="row" style="justify-content: space-between; align-items: center">
-            <div class="agent-frame" id="agentFrame">
-              <div class="label">Agent</div>
-              <!-- Transparent placeholder to avoid broken image icon before first spin -->
-              <img
-                id="agentImg"
-                class="agent-icon"
-                src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-                alt="agent"
-              />
-              <div id="agentName" class="muted small"></div>
-              <div class="shine"></div>
-            </div>
-
-            <div
-              style="
-                width: 2px;
-                background: rgba(255, 255, 255, 0.06);
-                height: 86px;
-                border-radius: 2px;
-                margin: 0 12px;
-              "
-            ></div>
-
-            <div class="center" style="min-width: 180px">
-              <div class="label">Focus</div>
-              <div id="focusDisplay" class="big focus-text">-</div>
-              <div class="small muted">Short labels used</div>
-            </div>
-          </div>
-		  <div class="row" style="margin-top: 12px; justify-content: center">
-            <button id="spinAgentBtn">Spin Agent</button>
-            <button id="spinFocusBtn" style="background: #7c3aed">Spin Focus</button>
-            <button id="resetBtn" class="ghost">Full Reset</button>
-          </div>
-        </div>
-
-        <!-- RR + scoreboard + chart -->
-        <div class="card" style="margin-top: 12px">
-          <h3 style="margin: 0 0 8px">RR Calculator</h3>
-          <div class="row" style="align-items: center">
-            <input id="rrInput" type="number" placeholder="Enter RR (e.g. 12)" value="0" />
-            <div style="display: flex; gap: 8px; flex-wrap: wrap">
-              <button id="addWinBtn" class="btn-win">Add Win</button>
-              <button id="addLossBtn" class="btn-loss">Add Loss</button>
-              <button id="undoBtn" class="ghost">Undo</button>
-            </div>
-          </div>
-
-          <div style="margin-top: 12px" class="row">
-            <div style="flex: 1">
-              <div class="label">Wins (tap to remove)</div>
-              <ul id="winsList"></ul>
-            </div>
-            <div style="flex: 1">
-              <div class="label">Losses (tap to remove)</div>
-              <ul id="lossesList"></ul>
-            </div>
-          </div>
-
-          <div style="margin-top: 12px" class="rating-wrap">
-            <div class="rating-labels">
-              <div>Loss</div>
-              <div>Gain</div>
-            </div>
-            <div class="rating-bar">
-              <div class="rating-center"></div>
-              <div class="segments" id="segmentsContainer"></div>
-            </div>
-            <div class="scoreboard">
-              <div class="scorebox">
-                <div class="small">Wins</div>
-                <div id="winsCount" class="score-num">0</div>
-              </div>
-              <div class="scorebox">
-                <div class="small">Losses</div>
-                <div id="lossCount" class="score-num">0</div>
-              </div>
-              <div class="scorebox">
-                <div class="small">Total Games</div>
-                <div id="totalGames" class="score-num">0</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top: 12px">
-          <h4 style="margin: 0 0 8px">RR over recent matches (latest 20)</h4>
-          <div id="chartRow" class="chart-row"></div>
-          <div
-            style="
-              margin-top: 8px;
-              display: flex;
-              gap: 8px;
-              align-items: center;
-              justify-content: center;
-            "
-          >
-            <div class="small muted">Negative</div>
-            <div style="width: 16px; height: 10px; background: #ef4444; border-radius: 2px"></div>
-            <div class="small muted">Positive</div>
-            <div style="width: 16px; height: 10px; background: #16a34a; border-radius: 2px"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT SIDE: Match tracker + logs -->
-      <div>
-        <div class="card">
-          <h3 style="margin: 0 0 8px">Match Tracker</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-            <select id="matchAgent"><option value="">Agent (optional)</option></select>
-            <select id="matchFocus"><option value="">Focus (optional)</option></select>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px">
-            <select id="matchResult">
-              <option value="win">Win</option>
-              <option value="loss">Loss</option>
-            </select>
-            <input id="matchRR" type="number" placeholder="RR change (e.g. 15)" />
-          </div>
-          <input id="matchMap" type="text" placeholder="Map (optional)" style="margin-top: 8px" />
-          <input
-            id="matchScore"
-            type="text"
-            placeholder="Score (optional) e.g. 13-10"
-            style="margin-top: 8px"
-          />
-          <textarea id="matchNotes" placeholder="Notes (key moments)" style="margin-top: 8px"></textarea>
-          <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap">
-            <button id="addMatchBtn">Add Match</button>
-            <button id="exportCsvBtn" class="ghost">Export Combined CSV</button>
-            <button id="clearMatchesBtn" class="ghost">Clear Matches</button>
-          </div>
-
-          <div style="margin-top: 10px">
-            <div class="label">Recent Matches</div>
-            <ul id="matchesList"></ul>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top: 12px">
-          <h3 style="margin: 0 0 8px">Performance Log</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-            <select id="logAgent"><option value="">Agent</option></select>
-            <select id="logFocus"><option value="">Focus</option></select>
-          </div>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px">
-            <input id="logRating" type="number" min="1" max="5" placeholder="Self rating 1-5" />
-            <input id="logMood" type="text" placeholder="Mental state (focused/tilt)" />
-          </div>
-          <textarea
-            id="logNotes"
-            placeholder="What went well / what to work on"
-            style="margin-top: 8px"
-          ></textarea>
-          <div style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap">
-            <button id="addLogBtn">Save Log</button>
-            <button id="clearLogsBtn" class="ghost">Clear Logs</button>
-          </div>
-
-          <div style="margin-top: 10px">
-            <div class="label">Recent Logs</div>
-            <ul id="logsList"></ul>
-          </div>
-        </div>
-      </div>
+<header class="app-header">
+  <div class="nav-left">
+    <div class="nav-logo">
+      <img src="./baseline-app_files/val-logo.png" alt="VAL" class="logo-img">
+      <span class="logo-text">VAL TRACKER</span>
     </div>
+    <nav class="nav-links">
+      <button class="nav-btn active" data-page="home">Home</button>
+      <button class="nav-btn" data-page="logging">Logging</button>
+      <button class="nav-btn" data-page="insights">Insights</button>
+      <button class="nav-btn" data-page="stats">Stats</button>
+      <div class="nav-underline" style="width: 69.25px; left: 0px;"></div>
+    </nav>
   </div>
 
-  <script>
-    const agentIcons = {
-      astra: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/astra.png",
-      breach: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/breach.png",
-      brimstone: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/brimstone.png",
-      chamber: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/chamber.png",
-      clove: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/clove.png",
-      cypher: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/cypher.png",
-      deadlock: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/deadlock.png",
-      fade: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/fade.png",
-      gekko: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/gekko.png",
-      harbor: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/harbor.png",
-      iso: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/iso.png",
-      jett: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/jett.png",
-      kayo: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/kayo.png",
-      killjoy: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/killjoy.png",
-      neon: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/neon.png",
-      omen: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/omen.png",
-      phoenix: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/phoenix.png",
-      raze: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/raze.png",
-      reyna: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/reyna.png",
-      sage: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/sage.png",
-      skye: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/skye.png",
-      sova: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/sova.png",
-      tejo: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/tejo.png",
-      veto: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/veto.png",
-      viper: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/viper.png",
-      vyse: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/vyse.png",
-      waylay: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/waylay.png",
-      yoru: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/yoru.png"
-    };
+  <div class="nav-right">
+    <!-- RR Progress Bar Widgets -->
+    <div class="nav-rr-progress-bar" id="nextRankWidget">
+      <span class="nav-rr-label">RR to next rank</span>
+      <div class="nav-rr-value">+120 → Ascendant 1</div>
+      <div class="nav-rr-bar">
+        <div class="nav-rr-fill" style="width: 65%;"></div>
+      </div>
+    </div>
 
-    const agents = Object.keys(agentIcons);
-    const focuses = [
-      "CH Placement",
-      "Peak Timing",
-      "FB Accuracy",
-      "Trading",
-      "Rotations",
-      "Utility Timing",
-      "Jiggle Timing",
-      "Entry Pathing"
-    ];
+    <div class="nav-rr-progress-bar" id="goalRankWidget">
+      <span class="nav-rr-label">RR to Goal Rank</span>
+      <div class="nav-rr-value">+350 → Radiant</div>
+      <div class="nav-rr-bar">
+        <div class="nav-rr-fill" style="width: 40%;"></div>
+      </div>
+    </div>
 
-    const agentImg = document.getElementById("agentImg");
-    const agentName = document.getElementById("agentName");
-    const agentFrame = document.getElementById("agentFrame");
-    const focusDisplay = document.getElementById("focusDisplay");
-    const spinAgentBtn = document.getElementById("spinAgentBtn");
-    const spinFocusBtn = document.getElementById("spinFocusBtn");
-    const resetBtn = document.getElementById("resetBtn");
+    <!-- Profile Panel should be inside nav-right -->
+    <div class="profile-panel" id="profilePanel">
+      <!-- Profile Avatar -->
+      <div class="profile-avatar-wrap" id="profileAvatarWrap">
+        <div class="profile-avatar-ring">
+          <img id="profileAvatarImg" class="profile-avatar-img" src="./baseline-app_files/jett.png" alt="Avatar">
+        </div>
+      </div>
 
-    const rrInput = document.getElementById("rrInput");
-    const addWinBtn = document.getElementById("addWinBtn");
-    const addLossBtn = document.getElementById("addLossBtn");
-    const undoBtn = document.getElementById("undoBtn");
-    const winsList = document.getElementById("winsList");
-    const lossesList = document.getElementById("lossesList");
+      <div class="profile-divider"></div>
 
-    const winsCountEl = document.getElementById("winsCount");
-    const lossCountEl = document.getElementById("lossCount");
-    const totalGamesEl = document.getElementById("totalGames");
-    const segmentsContainer = document.getElementById("segmentsContainer");
-    const chartRow = document.getElementById("chartRow");
+      <div class="profile-info">
+        <div class="profile-line-main">
+          <span id="profileRiotId">RiotID#TAG</span>
+          <span class="profile-region" id="profileRegion">NA</span>
+        </div>
 
-    const matchAgent = document.getElementById("matchAgent");
-    const matchFocus = document.getElementById("matchFocus");
-    const matchResult = document.getElementById("matchResult");
-    const matchRR = document.getElementById("matchRR");
-    const matchMap = document.getElementById("matchMap");
-    const matchScore = document.getElementById("matchScore");
-    const matchNotes = document.getElementById("matchNotes");
-    const addMatchBtn = document.getElementById("addMatchBtn");
-    const clearMatchesBtn = document.getElementById("clearMatchesBtn");
-    const exportCsvBtn = document.getElementById("exportCsvBtn");
-    const matchesList = document.getElementById("matchesList");
+        <div class="profile-line-sub" id="profileProfileName">Main Profile</div>
 
-    const logAgent = document.getElementById("logAgent");
-    const logFocus = document.getElementById("logFocus");
-    const logRating = document.getElementById("logRating");
-    const logMood = document.getElementById("logMood");
-    const logNotes = document.getElementById("logNotes");
-    const addLogBtn = document.getElementById("addLogBtn");
-    const clearLogsBtn = document.getElementById("clearLogsBtn");
-    const logsList = document.getElementById("logsList");
+        <div class="profile-line-rr">
+          <span class="label">Starting RR:</span>
+          <span class="value" id="profileStartingRR">0</span>
+        </div>
+      </div>
 
-    let wins = [];
-    let losses = [];
-    let history = [];
-    let matches = [];
-    let logs = [];
-    let winsCount = 0;
-    let lossCount = 0;
-    const SEGMENTS = 20;
+      <div class="profile-divider"></div>
 
-    function titleCase(s) {
-      return s.replace(/\b\w/g, (c) => c.toUpperCase());
-    }
+      <!-- Settings Dropdown Toggle -->
+      <button class="profile-dropdown-toggle" id="profileDropdownToggle">⌄</button>
 
-    function saveAll() {
-      localStorage.setItem("vr_wins", JSON.stringify(wins));
-      localStorage.setItem("vr_losses", JSON.stringify(losses));
-      localStorage.setItem("vr_matches", JSON.stringify(matches));
-      localStorage.setItem("vr_logs", JSON.stringify(logs));
-      localStorage.setItem("vr_counts", JSON.stringify({ winsCount, lossCount }));
-    }
+      <!-- Settings Dropdown -->
+      <div id="profileDropdown" class="profile-dropdown">
+        <div class="pd-section-label">Profile</div>
+        <button class="pd-item" id="pdEditProfile">Edit Profile</button>
+        <button class="pd-item" id="pdImportTracker">Import Tracker</button>
 
-    function loadAll() {
-      wins = JSON.parse(localStorage.getItem("vr_wins") || "[]");
-      losses = JSON.parse(localStorage.getItem("vr_losses") || "[]");
-      matches = JSON.parse(localStorage.getItem("vr_matches") || "[]");
-      logs = JSON.parse(localStorage.getItem("vr_logs") || "[]");
-      const c = JSON.parse(localStorage.getItem("vr_counts") || '{"winsCount":0,"lossCount":0}');
-      winsCount = c.winsCount || 0;
-      lossCount = c.lossCount || 0;
-    }
+        <div class="pd-section-label">Settings</div>
+        <button class="pd-item" id="pdOpenSettings">Open Settings</button>
 
-    function populateSelects() {
-      [matchAgent, logAgent].forEach((sel) => {
-        sel.innerHTML = '<option value="">Agent</option>';
-        agents.forEach((a) =>
-          sel.insertAdjacentHTML("beforeend", `<option value="${a}">${titleCase(a)}</option>`)
-        );
-      });
-      [matchFocus, logFocus].forEach((sel) => {
-        sel.innerHTML = '<option value="">Focus</option>';
-        focuses.forEach((f) =>
-          sel.insertAdjacentHTML("beforeend", `<option value="${f}">${f}</option>`)
-        );
-      });
-    }
+        <div class="pd-section-label">Danger Zone</div>
+        <button class="pd-item hazard" id="pdHardReset">Hard Reset</button>
+      </div>
+    </div>
 
-    function createSegments() {
-      segmentsContainer.innerHTML = "";
-      for (let i = 0; i < SEGMENTS; i++) {
-        const d = document.createElement("div");
-        d.className = "seg";
-        segmentsContainer.appendChild(d);
-      }
-    }
+    <!-- Hamburger Button (mobile) -->
+    <button class="hamburger" id="hamburgerBtn">☰</button>
+  </div>
+</header>
 
-    function updateScoreboard() {
-      winsCountEl.textContent = winsCount;
-      lossCountEl.textContent = lossCount;
-      totalGamesEl.textContent = winsCount + lossCount;
-      [winsCountEl, lossCountEl, totalGamesEl].forEach((el) => {
-        el.classList.add("pop");
-        setTimeout(() => el.classList.remove("pop"), 340);
-      });
-    }
-
-    function renderChart() {
-      chartRow.innerHTML = "";
-      const recent = matches.slice(-20);
-      if (recent.length === 0) {
-        chartRow.innerHTML = '<div class="small muted">No matches yet</div>';
-        return;
-      }
-      let maxAbs = Math.max(...recent.map((m) => Math.abs(Number(m.rr) || 0)), 1);
-      recent.forEach((m) => {
-        const bar = document.createElement("div");
-        bar.className = "chart-bar";
-        const h = Math.max(6, Math.round((Math.abs(m.rr) / maxAbs) * 110));
-        bar.style.height = h + "px";
-        bar.title = `${m.result.toUpperCase()} ${m.rr} ${m.agent || ""} ${m.focus || ""}`;
-        if (m.rr > 0) {
-          bar.style.background = "linear-gradient(180deg,#16a34a,#064e3b)";
-        } else {
-          bar.style.background = "linear-gradient(180deg,#ef4444,#7f1d1d)";
-        }
-        chartRow.appendChild(bar);
-      });
-    }
-	function updateRating() {
-      const sumWins = wins.reduce((a, b) => a + b, 0);
-      const sumLosses = losses.reduce((a, b) => a + b, 0);
-      const total = sumWins + sumLosses;
-      const MIN = -50, MAX = 50;
-      const clamped = Math.max(MIN, Math.min(MAX, total));
-      const ratio = (clamped - MIN) / (MAX - MIN);
-      const filled = Math.round(ratio * SEGMENTS);
-      const segs = Array.from(segmentsContainer.children);
-      segs.forEach((s, idx) => {
-        s.classList.remove("win", "loss");
-        if (idx < filled) {
-          const centerIndex = SEGMENTS / 2;
-          if (idx >= centerIndex) s.classList.add("win");
-          else s.classList.add("loss");
-        }
-      });
-      renderChart();
-    }
-
-    function renderLists() {
-      winsList.innerHTML = "";
-      lossesList.innerHTML = "";
-      wins.forEach((v, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<span>${v}</span><div><button class="ghost">remove</button></div>`;
-        li.querySelector("button").addEventListener("click", () => {
-          history.push({ type: "remove-win", index: i, value: v });
-          wins.splice(i, 1);
-          winsCount = Math.max(0, winsCount - 1);
-          updateDisplays();
-        });
-        winsList.appendChild(li);
-      });
-      losses.forEach((v, i) => {
-        const li = document.createElement("li");
-        li.innerHTML = `<span>${v}</span><div><button class="ghost">remove</button></div>`;
-        li.querySelector("button").addEventListener("click", () => {
-          history.push({ type: "remove-loss", index: i, value: v });
-          losses.splice(i, 1);
-          lossCount = Math.max(0, lossCount - 1);
-          updateDisplays();
-        });
-        lossesList.appendChild(li);
-      });
-    }
-
-    function renderMatches() {
-      matchesList.innerHTML = "";
-      if (matches.length === 0) {
-        matchesList.innerHTML = '<li class="small muted">No matches yet</li>';
-        return;
-      }
-      matches.slice().reverse().forEach((m, idxRev) => {
-        const idx = matches.length - 1 - idxRev;
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <div style="text-align:left">
-            <strong>${m.result.toUpperCase()}</strong> ${
-              m.rr > 0 ? "+" + m.rr : m.rr
-            }
-            <div class="small muted">
-              ${m.agent || ""} ${m.focus ? "• " + m.focus : ""} 
-              ${m.map ? "• " + m.map : ""} ${m.score ? "• " + m.score : ""}
-              ${m.dateDisplay || ""}
-            </div>
-            <div class="small">${m.notes || ""}</div>
+<div class="app">
+  <!-- HOME PAGE -->
+  <section id="page-home" class="page active">
+    <div class="home-layout dashboard-grid">
+      <!-- Weekly Focus + Improvement Timeline -->
+      <div class="card weekly-focus-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Weekly Focus Trend</div>
+            <div class="card-sub">Where your attention actually went this week.</div>
           </div>
-          <div><button class="ghost">remove</button></div>
-        `;
-        li.querySelector("button").addEventListener("click", () => {
-          const removed = matches.splice(idx, 1)[0];
-          if (Number(removed.rr) > 0) {
-            const winIdx = wins.indexOf(Number(removed.rr));
-            if (winIdx >= 0) wins.splice(winIdx, 1);
-            winsCount = Math.max(0, winsCount - 1);
-          } else {
-            const lossIdx = losses.indexOf(Number(removed.rr));
-            if (lossIdx >= 0) losses.splice(lossIdx, 1);
-            lossCount = Math.max(0, lossCount - 1);
-          }
-          updateDisplays();
-        });
-        matchesList.appendChild(li);
-      });
-    }
+          <span class="card-pill">Last 7 days</span>
+        </div>
+        <ul class="weekly-list" id="weeklyFocusSummary" style="font-size:13px; margin:0; padding-left:18px;">
+          <li>• Most practiced focus: <span class="rr-glow">Crosshair Discipline</span></li>
+          <li>• Weakest self-rating: (add from logs soon)</li>
+          <li>• Most tilt mentions: (add from logs soon)</li>
+        </ul>
 
-    function renderLogs() {
-      logsList.innerHTML = "";
-      if (logs.length === 0) {
-        logsList.innerHTML = '<li class="small muted">No logs yet</li>';
-        return;
-      }
-      logs.slice().reverse().forEach((l, idxRev) => {
-        const idx = logs.length - 1 - idxRev;
-        const li = document.createElement("li");
-        li.innerHTML = `
-          <div style="text-align:left">
-            <strong>${l.agent || ""} ${l.focus ? "• " + l.focus : ""}</strong>
-            <div class="small muted">
-              Rating: ${l.rating || ""} • ${l.mood || ""} • ${l.dateDisplay || ""}
-            </div>
-            <div class="small">${l.notes || ""}</div>
+        <!-- Improvement Timeline -->
+        <div class="improvement-timeline">
+          <div class="timeline-header">
+            <div class="timeline-title">Improvement Timeline</div>
+            <div class="timeline-window">Last 5 sessions</div>
           </div>
-          <div><button class="ghost">remove</button></div>
-        `;
-        li.querySelector("button").addEventListener("click", () => {
-          logs.splice(idx, 1);
-          saveAll();
-          renderLogs();
-        });
-        logsList.appendChild(li);
-      });
+          <div class="timeline-track" id="improvementTimeline">Last 1 games: +12 RR · 12.0 RR / game</div>
+        </div>
+      </div>
+
+      <!-- Loadout Generator -->
+      <div class="card loadout-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Loadout Generator</div>
+            <div class="card-sub">Roll an agent + focus for this session.</div>
+          </div>
+          <span class="card-pill">Today</span>
+        </div>
+
+        <!-- Role filters -->
+        <div id="roleButtons" class="role-filter-row">
+          <button class="role-filter-btn active" data-role="any" id="roleAnyBtn">Any</button>
+          <button class="role-filter-btn" data-role="Duelist" id="roleDuelistBtn">Duelist</button>
+          <button class="role-filter-btn" data-role="Initiator" id="roleInitiatorBtn">Initiator</button>
+          <button class="role-filter-btn" data-role="Controller" id="roleControllerBtn">Controller</button>
+          <button class="role-filter-btn" data-role="Sentinel" id="roleSentinelBtn">Sentinel</button>
+        </div>
+
+        <div class="home-loadout-main">
+          <div class="agent-frame" id="agentFrame">
+            <div class="shine"></div>
+            <div id="agentPlaceholder" class="agent-placeholder" style="display: none;">F</div>
+          </div>
+          <div class="home-loadout-info">
+            <div>
+              <div class="home-loadout-label">Generated Agent</div>
+              <div class="home-loadout-value" id="agentName">Reyna</div>
+            </div>
+
+            <div>
+              <div class="home-loadout-label">Focus</div>
+              <div class="home-loadout-value" id="focusDisplay">Site Anchor Discipline</div>
+            </div>
+          </div>
+        </div>
+
+        <button id="spinAgentBtn" class="small-btn">Generate Loadout</button>
+      </div>
+
+      <!-- RR Calculator -->
+      <div class="card rr-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">RR Calculator</div>
+            <div class="card-sub">Track this session’s RR changes quickly.</div>
+          </div>
+          <span class="card-pill">Session</span>
+        </div>
+
+        <div class="card-row">
+          <span class="card-label">RR Δ Input</span>
+          <input id="rrInput" type="number" placeholder="+/- RR" style="max-width:120px;">
+        </div>
+
+        <div class="home-rr-buttons">
+          <button id="addWinBtn" class="rr-btn btn-win">Win</button>
+          <button id="addLossBtn" class="rr-btn btn-loss">Loss</button>
+          <button id="addDrawBtn" class="rr-btn btn-draw">Draw</button>
+          <button id="undoBtn" class="rr-btn btn-undo">Undo</button>
+        </div>
+
+        <div class="rr-total">
+          <span id="totalRRDisplay" data-value="0" style="color: rgb(34, 197, 94);">12</span>
+        </div>
+
+        <!-- Role-Aware Round Impact Meter -->
+        <div class="impact-card">
+          <div class="impact-header-row">
+            <div class="timeline-title">Round Impact (Role Aware)</div>
+          </div>
+          <span class="impact-role-pill" id="impactRolePill">Duelist view</span>
+          <div class="impact-meter">
+            <div class="impact-scale">
+              <span>Low impact</span>
+              <span>Balanced</span>
+              <span>High impact</span>
+            </div>
+            <div class="impact-bar-outer">
+              <div class="impact-bar-fill" id="impactBarFill"></div>
+              <div class="impact-marker" id="impactMarker" style="left:55%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="scoreboard">
+          <div class="scorebox">
+            <div class="small">Wins</div>
+            <div id="winsCount" class="score-num">1</div>
+          </div>
+          <div class="scorebox">
+            <div class="small">Losses</div>
+            <div id="lossCount" class="score-num">0</div>
+          </div>
+          <div class="scorebox">
+            <div class="small">Draws</div>
+            <div id="drawCount" class="score-num">0</div>
+          </div>
+          <div class="scorebox">
+            <div class="small">Games</div>
+            <div id="totalGames" class="score-num">1</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RR Trend + Compass -->
+      <div class="card rr-chart-card">
+        <div class="card-header">
+          <div class="card-title">RR Trend</div>
+          <div class="card-sub">Cumulative RR across your logged matches.</div>
+        </div>
+
+        <div class="card-row">
+          <button class="graph-btn active" data-size="5">5</button>
+          <button class="graph-btn" data-size="20">20</button>
+          <button class="graph-btn" data-size="50">50</button>
+          <button class="graph-btn" data-size="all">All</button>
+        </div>
+
+        <div class="chart-compass-layout">
+          <!-- RR Trend Chart -->
+          <div class="home-chart-wrap compact-chart">
+            <div id="chartRow">
+              <svg width="710" height="220">
+                <!-- Axes -->
+                <line x1="40" y1="20" x2="40" y2="180" stroke="#94a3b8" stroke-width="1.5"></line>
+                <line x1="40" y1="180" x2="670" y2="180" stroke="#94a3b8" stroke-width="1.5"></line>
+                <path d="M40 180 L670 20 " fill="none" stroke="#38bdf8" stroke-width="2" class="chart-animate"></path>
+                <circle cx="40" cy="180" r="3" fill="#e5e7eb"></circle>
+                <circle cx="670" cy="20" r="3" fill="#e5e7eb"></circle>
+                <circle cx="670" cy="20" class="final-end"></circle>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Strength / Weakness Compass -->
+          <div class="compass-panel">
+            <div class="card-title">Strength / Weakness Compass</div>
+            <div class="card-sub">Snapshot of how your stats lean this session.</div>
+
+            <div class="compass-main">
+              <div class="compass-svg-wrap">
+                <svg class="sw-compass" viewBox="0 0 200 200" id="compassSvg">
+                  <!-- Axes -->
+                  <line x1="100" y1="10" x2="100" y2="190" class="compass-axis-line"></line>
+                  <line x1="10" y1="100" x2="190" y2="100" class="compass-axis-line"></line>
+                  <polygon id="compassPolygon" class="compass-polygon" points="100,40 155,100 100,160 55,100"></polygon>
+                  <text x="100" y="20" text-anchor="middle" class="compass-label">Aim</text>
+                  <text x="180" y="105" text-anchor="middle" class="compass-label">Gamesense</text>
+                  <text x="100" y="188" text-anchor="middle" class="compass-label">Teamplay</text>
+                  <text x="20" y="105" text-anchor="middle" class="compass-label">Discipline</text>
+                </svg>
+
+                <div class="compass-axis-tabs" id="compassAxisTabs">
+                  <button class="compass-axis-btn active" data-lens="aim">Aim lens</button>
+                  <button class="compass-axis-btn" data-lens="gamesense">Gamesense lens</button>
+                  <button class="compass-axis-btn" data-lens="teamplay">Teamplay lens</button>
+                  <button class="compass-axis-btn" data-lens="discipline">Discipline lens</button>
+                </div>
+              </div>
+
+              <div class="compass-lens">
+                <div class="lens-title" id="compassLensTitle">Aim lens — what we're using</div>
+                <ul class="lens-list" id="compassLensList">
+                  <li class="good">• HS% vs rank baseline (current: 27%)</li>
+                  <li class="good">• Duel outcomes (FK &gt; FD)</li>
+                  <li class="bad">• Aim drops in clutch &amp; eco rounds</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div> <!-- end bottom RR chart + compass card -->
+    </div> <!-- End of dashboard grid -->
+  </section> <!-- End of Home Page -->
+</div> <!-- End of app container -->
+<script>
+console.log("SCRIPT START");
+
+// ========================
+// GLOBAL STATE
+// ========================
+let profiles = [];
+let activeProfileId = null;
+
+// Per-profile session data (live in memory, persisted per profile)
+let matches = [];        // [{ id, rr, result, agent, focus, map, score, notes, role, createdAt }]
+let rrSum = 0;
+let lastMatchesLength = 0;
+
+let isUndoAnimating = false;
+let activeRoleFilter = "any";   // for loadout generator
+let currentSize = "5";          // RR chart window size
+
+// DOM refs (filled in DOMContentLoaded)
+let rrInput, addWinBtn, addLossBtn, addDrawBtn, undoBtn;
+let totalRRDisplay, winsCountEl, lossCountEl, drawCountEl, totalGamesEl;
+let chartRow, spinAgentBtn, agentImg, agentPlaceholder, agentName, focusDisplay;
+let matchListEl;
+let profileAvatarWrap, profileSwitcher, profileListEl, profilePanel;
+let profileRiotIdEl, profileRegionEl, profileProfileNameEl, profileStartingRREl;
+let profileDropdownToggle, profileDropdown;
+let navRRProgressEl; // created in JS
+
+// Storage keys
+const STORAGE_KEY_PROFILES   = "valtracker_profiles_v1";
+const STORAGE_KEY_ACTIVE_ID  = "valtracker_active_profile_id";
+
+// Simple rank thresholds (RR total from starting point)
+const RANK_THRESHOLDS = [
+  { name: "Iron",       min: 0,    max: 300 },
+  { name: "Bronze",     min: 300,  max: 600 },
+  { name: "Silver",     min: 600,  max: 900 },
+  { name: "Gold",       min: 900,  max: 1200 },
+  { name: "Platinum",   min: 1200, max: 1500 },
+  { name: "Diamond",    min: 1500, max: 1800 },
+  { name: "Ascendant",  min: 1800, max: 2100 },
+  { name: "Immortal",   min: 2100, max: 2400 },
+  { name: "Radiant",    min: 2400, max: Infinity }
+];
+
+// ========================
+// UTILITIES
+// ========================
+function safeNumber(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function uuid() {
+  return "m_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
+}
+
+function parseScore(scoreStr) {
+  if (!scoreStr) return null;
+  const m = scoreStr.match(/(\d+)\s*[-:]\s*(\d+)/);
+  if (!m) return null;
+  return {
+    my: safeNumber(m[1]),
+    opp: safeNumber(m[2])
+  };
+}
+
+function nowISO() {
+  return new Date().toISOString();
+}
+
+// ========================
+// PROFILES: LOAD / SAVE / UI
+// ========================
+function createDefaultProfile() {
+  return {
+    id: "p_default",
+    name: "Main Profile",
+    riotId: "RiotID#TAG",
+    region: "NA",
+    startingRR: 0,
+    rankIconUrl: "",
+    avatarUrl: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/jett.png",
+    matches: []
+  };
+}
+
+function loadProfiles() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PROFILES);
+    if (!raw) {
+      profiles = [createDefaultProfile()];
+      activeProfileId = profiles[0].id;
+      saveProfiles();
+      return;
     }
-
-    function updateDisplays() {
-      renderLists();
-      renderMatches();
-      renderLogs();
-      updateScoreboard();
-      updateRating();
-      saveAll();
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      profiles = [createDefaultProfile()];
+      activeProfileId = profiles[0].id;
+      saveProfiles();
+      return;
     }
+    profiles = parsed;
+  } catch (e) {
+    console.warn("Failed to load profiles, resetting.", e);
+    profiles = [createDefaultProfile()];
+    activeProfileId = profiles[0].id;
+    saveProfiles();
+  }
 
-    let lastAgent = null;
-    function spinAgentSlot(duration = 1200) {
-      agentFrame.classList.add("spin");
-      const steps = 24;
-      const seq = [];
-      for (let i = 0; i < steps - 1; i++) {
-        seq.push(agents[Math.floor(Math.random() * agents.length)]);
-      }
-      let final;
-      do {
-        final = agents[Math.floor(Math.random() * agents.length)];
-      } while (final === lastAgent);
-      seq.push(final);
-      seq.forEach((name, idx) => {
-        const t = Math.round((duration / steps) * (idx + 1) + idx * 6);
-        setTimeout(() => {
-          agentImg.src = agentIcons[name];
-          agentName.textContent = titleCase(name);
-          if (idx === seq.length - 1) {
-            lastAgent = name;
-            agentImg.classList.add("pop");
-            setTimeout(() => agentImg.classList.remove("pop"), 360);
-            agentFrame.classList.remove("spin");
-          }
-        }, t);
-      });
+  const storedId = localStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+  if (storedId && profiles.some(p => p.id === storedId)) {
+    activeProfileId = storedId;
+  } else {
+    activeProfileId = profiles[0].id;
+    localStorage.setItem(STORAGE_KEY_ACTIVE_ID, activeProfileId);
+  }
+}
+
+function saveProfiles() {
+  try {
+    localStorage.setItem(STORAGE_KEY_PROFILES, JSON.stringify(profiles));
+    if (activeProfileId) {
+      localStorage.setItem(STORAGE_KEY_ACTIVE_ID, activeProfileId);
     }
+  } catch (e) {
+    console.warn("Failed to save profiles", e);
+  }
+}
 
-    let lastFocus = null;
-    function spinFocus() {
-      let pick;
-      do {
-        pick = focuses[Math.floor(Math.random() * focuses.length)];
-      } while (pick === lastFocus);
-      lastFocus = pick;
-      focusDisplay.classList.add("hidden");
-      setTimeout(() => {
-        focusDisplay.textContent = titleCase(pick);
-        focusDisplay.classList.remove("hidden");
-        focusDisplay.classList.add("pop");
-        setTimeout(() => focusDisplay.classList.remove("pop"), 360);
-      }, 260);
+function getActiveProfile() {
+  return profiles.find(p => p.id === activeProfileId) || profiles[0] || null;
+}
+
+function setActiveProfile(id) {
+  if (activeProfileId === id) return;
+  const current = getActiveProfile();
+  if (current) {
+    current.matches = matches.slice();
+  }
+  activeProfileId = id;
+  localStorage.setItem(STORAGE_KEY_ACTIVE_ID, activeProfileId);
+  const next = getActiveProfile();
+  matches = Array.isArray(next.matches) ? next.matches.slice() : [];
+  recomputeFromMatches();
+  updateProfileHeaderUI();
+  rebuildProfileListUI();
+  updateDisplays();
+  renderChart(currentSize);
+  updateWeeklyFocusSummary();
+  updateNavRRToRank();
+  saveProfiles();
+}
+
+function handleAddProfile() {
+  const name = prompt("New profile name:", "Alt Account");
+  if (!name) return;
+
+  const riotId = prompt("Riot ID (Name#TAG):", "RiotID#TAG") || "RiotID#TAG";
+  const region = prompt("Region (e.g. NA, EU):", "NA") || "NA";
+
+  const newProfile = {
+    id: "p_" + Date.now(),
+    name,
+    riotId,
+    region,
+    startingRR: 0,
+    rankIconUrl: "",
+    avatarUrl: "https://raw.githubusercontent.com/michealdoolittle-cyber/images/main/icons/jett.png",
+    matches: []
+  };
+  profiles.push(newProfile);
+  saveProfiles();
+  setActiveProfile(newProfile.id);
+}
+
+function updateProfileHeaderUI() {
+  const p = getActiveProfile();
+  if (!p) return;
+
+  if (profileRiotIdEl)    profileRiotIdEl.textContent    = p.riotId || "RiotID#TAG";
+  if (profileRegionEl)    profileRegionEl.textContent    = p.region || "NA";
+  if (profileProfileNameEl) profileProfileNameEl.textContent = p.name || "Profile";
+  if (profileStartingRREl)  profileStartingRREl.textContent  = safeNumber(p.startingRR, 0);
+
+  const avatarImg = document.getElementById("profileAvatarImg");
+  if (avatarImg && p.avatarUrl) {
+    avatarImg.src = p.avatarUrl;
+  }
+
+  const rankIconEl = document.getElementById("profileRankIcon");
+  if (rankIconEl) {
+    if (p.rankIconUrl) {
+      rankIconEl.src = p.rankIconUrl;
+      rankIconEl.style.display = "block";
+    } else {
+      rankIconEl.style.display = "none";
     }
+  }
 
-    addWinBtn.addEventListener("click", () => {
-      const v = Number(rrInput.value) || 0;
-      wins.push(v);
-      history.push({ type: "add-win", value: v });
-      winsCount++;
-      rrInput.value = "";
-      updateDisplays();
+  updateNavRRToRank();
+}
+
+function rebuildProfileListUI() {
+  if (!profileListEl) return;
+  profileListEl.innerHTML = "";
+  profiles.forEach(p => {
+    const btn = document.createElement("button");
+    btn.className = "profile-switcher-item" + (p.id === activeProfileId ? " active" : "");
+    btn.dataset.profileId = p.id;
+    btn.innerHTML = `
+      <span style="font-weight:600;">${p.name || "Profile"}</span>
+      <span style="font-size:11px; color:#94a3b8;">${p.riotId || "RiotID#TAG"} · ${p.region || "NA"}</span>
+    `;
+    btn.addEventListener("click", () => {
+      setActiveProfile(p.id);
+      toggleProfileSwitcher(true);
     });
+    profileListEl.appendChild(btn);
+  });
+}
 
-    addLossBtn.addEventListener("click", () => {
-      const v = Number(rrInput.value) || 0;
-      const neg = -Math.abs(v);
-      losses.push(neg);
-      history.push({ type: "add-loss", value: neg });
-      lossCount++;
-      rrInput.value = "";
-      updateDisplays();
-    });
+// ========================
+// NAV: PAGE SWITCHING + UNDERLINE
+// ========================
+function updateNavUnderline() {
+  const activeBtn = document.querySelector(".nav-btn.active");
+  const underline = document.querySelector(".nav-underline");
+  const container = document.querySelector(".nav-links");
+  if (!activeBtn || !underline || !container) return;
 
-    undoBtn.addEventListener("click", () => {
-      const last = history.pop();
-      if (!last) {
-        alert("Nothing to undo");
-        return;
-      }
-      if (last.type === "add-win") {
-        wins.pop();
-        winsCount = Math.max(0, winsCount - 1);
-      } else if (last.type === "add-loss") {
-        losses.pop();
-        lossCount = Math.max(0, lossCount - 1);
-      } else if (last.type === "remove-win") {
-        wins.splice(last.index, 0, last.value);
-        winsCount++;
-      } else if (last.type === "remove-loss") {
-        losses.splice(last.index, 0, last.value);
-        lossCount++;
-      }
-      updateDisplays();
-    });
+  const rect = activeBtn.getBoundingClientRect();
+  const parentRect = container.getBoundingClientRect();
+  underline.style.width = rect.width + "px";
+  underline.style.left = (rect.left - parentRect.left) + "px";
+}
 
-    function formatDateMMDDYYYY(isoString) {
-      const d = new Date(isoString);
-      if (isNaN(d)) {
-        const now = new Date();
-        return (
-          String(now.getMonth() + 1).padStart(2, "0") +
-          "/" +
-          String(now.getDate()).padStart(2, "0") +
-          "/" +
-          now.getFullYear()
-        );
-      }
-      return (
-        String(d.getMonth() + 1).padStart(2, "0") +
-        "/" +
-        String(d.getDate()).padStart(2, "0") +
-        "/" +
-        d.getFullYear()
-      );
-    }
+function activatePage(pageId) {
+  document.querySelectorAll(".nav-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.page === pageId);
+  });
+  document.querySelectorAll(".page").forEach(page => {
+    page.classList.toggle("active", page.id === "page-" + pageId);
+  });
+  updateNavUnderline();
+}
 
-    addMatchBtn.addEventListener("click", () => {
-      const agent = matchAgent.value || "";
-      const focus = matchFocus.value || "";
-      const result = matchResult.value;
-      const rrVal = Number(matchRR.value) || 0;
-      const map = matchMap.value || "";
-      const score = matchScore.value || "";
-      const notes = matchNotes.value || "";
-      const iso = new Date().toISOString();
-      const entry = {
-        agent,
-        focus,
-        result,
-        rr: result === "win" ? rrVal : -Math.abs(rrVal),
-       map,
-        score,
-        notes,
-        date: iso,
-        dateDisplay: formatDateMMDDYYYY(iso)
-      };
-      matches.push(entry);
-      if (entry.rr > 0) {
-        wins.push(entry.rr);
-        winsCount++;
-        history.push({ type: "add-win", value: entry.rr });
-      } else {
-        losses.push(entry.rr);
-        lossCount++;
-        history.push({ type: "add-loss", value: entry.rr });
-      }
-      matchAgent.value = "";
-      matchFocus.value = "";
-      matchRR.value = "";
-      matchMap.value = "";
-      matchScore.value = "";
-      matchNotes.value = "";
-      updateDisplays();
-    });
+// ========================
+// PROFILE SWITCHER + SETTINGS DROPDOWN
+// ========================
+function toggleProfileSwitcher(forceClose) {
+  if (!profileSwitcher || !profileAvatarWrap) return;
+  const isOpen = profileSwitcher.classList.contains("open");
+  if (forceClose) {
+    profileSwitcher.classList.remove("open");
+    profileAvatarWrap.classList.remove("selected");
+    return;
+  }
+  if (isOpen) {
+    profileSwitcher.classList.remove("open");
+    profileAvatarWrap.classList.remove("selected");
+  } else {
+    profileSwitcher.classList.add("open");
+    profileAvatarWrap.classList.add("selected");
+  }
+}
 
-    clearMatchesBtn.addEventListener("click", () => {
-      if (!confirm("Clear all matches?")) return;
-      matches = [];
-      updateDisplays();
-    });
+function toggleProfileDropdown(forceClose) {
+  if (!profileDropdown || !profilePanel) return;
+  const isOpen = profileDropdown.classList.contains("open");
+  if (forceClose) {
+    profileDropdown.classList.remove("open");
+    profilePanel.classList.remove("open");
+    return;
+  }
+  if (isOpen) {
+    profileDropdown.classList.remove("open");
+    profilePanel.classList.remove("open");
+  } else {
+    profileDropdown.classList.add("open");
+    profilePanel.classList.add("open");
+  }
+}
 
-    addLogBtn.addEventListener("click", () => {
-      const iso = new Date().toISOString();
-      const entry = {
-        agent: logAgent.value || "",
-        focus: logFocus.value || "",
-        rating: Number(logRating.value) || "",
-        mood: logMood.value || "",
-        notes: logNotes.value || "",
-        date: iso,
-        dateDisplay: formatDateMMDDYYYY(iso)
-      };
-      logs.push(entry);
-      logAgent.value = "";
-      logFocus.value = "";
-      logRating.value = "";
-      logMood.value = "";
-      logNotes.value = "";
-      saveAll();
-      renderLogs();
-    });
+// ========================
+// MATCHES + RR STATS
+// ========================
+function recomputeFromMatches() {
+  rrSum = 0;
+  let w = 0, l = 0, d = 0;
 
-    clearLogsBtn.addEventListener("click", () => {
-      if (!confirm("Clear all logs?")) return;
-      logs = [];
-      saveAll();
-      renderLogs();
-    });
-	function downloadCSV(filename, csvString) {
-      const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    }
+  matches.forEach(m => {
+    rrSum += safeNumber(m.rr);
+    if (m.result === "win")  w++;
+    else if (m.result === "loss") l++;
+    else if (m.result === "draw") d++;
+  });
 
-    exportCsvBtn.addEventListener("click", () => {
-      const headers = [
-        "Date",
-        "Type",
-        "Agent",
-        "Focus",
-        "Result",
-        "RR",
-        "Map",
-        "Score",
-        "Self-Rating",
-        "Mental State",
-        "Notes"
-      ];
-      const items = [];
-      matches.forEach((m) => {
-        let ts = Date.parse(m.date);
-        if (isNaN(ts)) ts = Date.now();
-        items.push({
-          ts,
-          type: "match",
-          dateISO: m.date,
-          agent: m.agent || "",
-          focus: m.focus || "",
-          result: m.result || "",
-          rr: m.rr || "",
-          map: m.map || "",
-          score: m.score || "",
-          rating: "",
-          mood: "",
-          notes: m.notes || ""
-        });
-      });
-      logs.forEach((l) => {
-        let ts = Date.parse(l.date);
-        if (isNaN(ts)) ts = Date.now();
-        items.push({
-          ts,
-          type: "log",
-          dateISO: l.date,
-          agent: l.agent || "",
-          focus: l.focus || "",
-          result: "",
-          rr: "",
-          map: "",
-          score: "",
-          rating: l.rating || "",
-          mood: l.mood || "",
-          notes: l.notes || ""
-        });
-      });
-      items.sort((a, b) => a.ts - b.ts);
-      const rows = [headers.join(",")];
-      items.forEach((it) => {
-        const date = formatDateMMDDYYYY(it.dateISO || new Date(it.ts).toISOString());
-        const row = [
-          `"${date}"`,
-          `"${it.type}"`,
-          `"${(it.agent || "").replace(/"/g, '""')}"`,
-          `"${(it.focus || "").replace(/"/g, '""')}"`,
-          `"${(it.result || "").replace(/"/g, '""')}"`,
-          `"${String(it.rr || "")}"`,
-          `"${(it.map || "").replace(/"/g, '""')}"`,
-          `"${(it.score || "").replace(/"/g, '""')}"`,
-          `"${String(it.rating || "")}"`,
-          `"${(it.mood || "").replace(/"/g, '""')}"`,
-          `"${(it.notes || "").replace(/"/g, '""')}"`
-        ];
-        rows.push(row.join(","));
-      });
-      const csv = rows.join("\n");
-      downloadCSV("valorant_tracker_export.csv", csv);
-    });
+  lastMatchesLength = matches.length;
 
-    resetBtn.addEventListener("click", () => {
-      if (!confirm("Reset EVERYTHING (matches, logs, RR, scoreboard)?")) return;
-      wins = [];
-      losses = [];
-      history = [];
-      matches = [];
-      logs = [];
-      winsCount = 0;
-      lossCount = 0;
-      agentImg.src =
-        "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
-      agentName.textContent = "";
-      focusDisplay.textContent = "-";
-      saveAll();
-      createSegments();
-      updateDisplays();
-    });
+  if (winsCountEl)   winsCountEl.textContent = w;
+  if (lossCountEl)   lossCountEl.textContent = l;
+  if (drawCountEl)   drawCountEl.textContent = d;
+  if (totalGamesEl)  totalGamesEl.textContent = matches.length;
+  if (totalRRDisplay) totalRRDisplay.textContent = rrSum;
 
-    spinAgentBtn.addEventListener("click", () => spinAgentSlot(1200));
-    spinFocusBtn.addEventListener("click", spinFocus);
+  // Save back to profile
+  const p = getActiveProfile();
+  if (p) {
+    p.matches = matches.slice();
+    saveProfiles();
+  }
 
-    loadAll();
-    createSegments();
-    populateSelects();
-    renderLists();
-    renderMatches();
-    renderLogs();
-    updateScoreboard();
-    updateRating();
-    renderChart();
-  </script>
+  updateNavRRToRank();
+}
+
+function addRRChange(delta, meta = {}) {
+  const rr = safeNumber(delta);
+  const result = meta.result || (rr > 0 ? "win" : rr < 0 ? "loss" : "draw");
+  const newMatch = {
+    id: uuid(),
+    rr,
+    result,
+    agent: meta.agent || (agentName ? agentName.textContent : ""),
+    focus: meta.focus || (focusDisplay ? focusDisplay.textContent : ""),
+    map: meta.map || "",
+    score: meta.score || "",
+    notes: meta.notes || "",
+    role: meta.role || activeRoleFilter || "any",
+    createdAt: nowISO()
+  };
+
+  matches.push(newMatch);
+  recomputeFromMatches();
+  updateDisplays();
+
+  // Chart: animate only the new segment
+  renderChart(currentSize);
+
+  // Weekly focus + advanced views
+  updateWeeklyFocusSummary();
+  updateImprovementTimeline();
+  updateRoleImpactMeter();
+  updateStrengthCompass();
+}
+
+function undoLastMatch() {
+  if (!matches.length) return;
+  isUndoAnimating = true;
+
+  matches.pop();
+  recomputeFromMatches();
+  updateDisplays();
+  renderChart(currentSize);
+  updateWeeklyFocusSummary();
+  updateImprovementTimeline();
+  updateRoleImpactMeter();
+  updateStrengthCompass();
+
+  setTimeout(() => { isUndoAnimating = false; }, 400);
+}
+
+console.log("BOTTOM OF FILE REACHED");
+</script>
 </body>
 </html>
